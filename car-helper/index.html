@@ -790,6 +790,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
     var isAtt=photoMode==='att';
     pending=null;showResult();busy(true);setStatus((isAtt?'讀取出席表':'辨識白板')+'中,通常需要 20 到 60 秒…','busy');startTick();
     ctl=new AbortController();
+    var timedOut=false,giveUp=setTimeout(function(){timedOut=true;if(ctl)ctl.abort()},150000);
     var job=isAtt
       ? gemini(attPrompt(),{images:[file],signal:ctl.signal,modelTier:'default'})
       : makeImages(file).then(function(imgs){return gemini(boardPrompt(imgs.length),{images:imgs,signal:ctl.signal,modelTier:'default'})});
@@ -806,10 +807,10 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
         pending=r;setStatus('辨識完成,請核對後套用。');showResult();
       }
     }).catch(function(e){
-      if(e&&e.code==='cancelled')setStatus('已停止。');
+      if(e&&e.code==='cancelled')setStatus(timedOut?'等了超過 2 分鐘 Google 還沒回應,可能是辨識服務太忙。請稍後再試,或請管理者換成較快的模型。':'已停止。',timedOut?'err':undefined);
       else if(e&&e.code==='server')setStatus('辨識失敗:'+e.message,'err');
       else setStatus(errCopy(e&&e.code),'err');
-    }).then(function(){stopTick();busy(false);ctl=null});
+    }).then(function(){clearTimeout(giveUp);stopTick();busy(false);ctl=null});
   }
   $pin.addEventListener('change',function(){
     var f=$pin.files&&$pin.files[0];$pin.value='';
