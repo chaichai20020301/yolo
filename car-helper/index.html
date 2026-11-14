@@ -685,7 +685,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
       return new Promise(function(res,rej){
         if(sig.aborted)return rej({code:'cancelled'});
         sig.addEventListener('abort',function(){rej({code:'cancelled'})});
-        api('recognize',{prompt:prompt,images:b64s}).then(function(t){
+        api('recognize',{prompt:prompt,images:b64s,kind:o.kind}).then(function(t){
           try{res(JSON.parse(String(t).trim().replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'')))}
           catch(e){rej({code:'invalid_json'})}
         }).catch(function(e){
@@ -792,8 +792,8 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
     ctl=new AbortController();
     var timedOut=false,giveUp=setTimeout(function(){timedOut=true;if(ctl)ctl.abort()},150000);
     var job=isAtt
-      ? gemini(attPrompt(),{images:[file],signal:ctl.signal,modelTier:'default'})
-      : makeImages(file).then(function(imgs){return gemini(boardPrompt(imgs.length),{images:imgs,signal:ctl.signal,modelTier:'default'})});
+      ? gemini(attPrompt(),{images:[file],signal:ctl.signal,kind:'att'})
+      : makeImages(file).then(function(imgs){return gemini(boardPrompt(imgs.length),{images:imgs,signal:ctl.signal,kind:'board'})});
     return job.then(function(d){
       if(isAtt){
         var a=cleanAtt(d);
