@@ -92,7 +92,6 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
 .result ul{margin:6px 0 10px;padding-left:20px;font-size:15px;font-variant-numeric:tabular-nums}
 .warn{display:flex;gap:8px;align-items:center;background:var(--orange-soft);border:1px solid var(--orange-line);border-radius:12px;padding:8px 12px;font-size:15px;margin:0 0 10px;color:#5E3A12}
 .file-in{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.loginform{display:grid;gap:8px;max-width:420px}
 
 /* 車輛分頁與來程/回程 */
 .tabs{position:sticky;top:calc(65px + env(safe-area-inset-top,0px));z-index:5;background:var(--surface);border:1px solid var(--panel-line);border-radius:20px;padding:12px;box-shadow:0 4px 12px rgba(25,62,37,.04)}
@@ -225,17 +224,6 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
 
   <div class="cols" id="cols">
     <div class="col">
-      <section class="card" id="login" hidden aria-label="登入">
-        <h2 class="t">登入</h2>
-        <p class="hint">請輸入姓名和 6 位數通行碼,與入口網相同。</p>
-        <div class="loginform">
-          <input id="name-in" type="text" autocomplete="username" placeholder="姓名">
-          <input id="token-in" type="password" inputmode="numeric" autocomplete="current-password" placeholder="6 位數通行碼">
-          <button class="primary" data-a="login" type="button">登入</button>
-        </div>
-        <p class="status err" id="login-msg" hidden></p>
-      </section>
-
       <section class="card" id="photo" hidden aria-label="拍照匯入">
         <h2 class="t"><i class="ic" aria-hidden="true" style="--ic:url(assets/common-icon-camera.svg)"></i>拍照匯入</h2>
         <p class="hint">先匯入今天的出席表,再匯入白板(或直接用自動排車)。結果都會先給你核對。</p>
@@ -314,7 +302,8 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
     });
   }
   var CFG=window.CHETANG_CONFIG||{};
-  CFG.AUTH_URL=CFG.AUTH_URL||(window.YOHO_CONFIG||{}).AUTH_URL||'';
+  /* 登入統一在入口網站;沒有有效憑證就回入口網站(和其他系統一樣) */
+  if(CFG.APP_URL&&!getToken()){document.body.style.visibility='hidden';location.replace('../index.html');return}
   function getToken(){
     try{
       var t=localStorage.getItem('yoho_token')||'',exp=Number(localStorage.getItem('yoho_exp')||0);
@@ -335,23 +324,10 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
   }
   function onApiErr(e,msg){
     if(e&&e.code==='unauthorized'){
-      clearAuth();refreshApi();
-      var m=document.getElementById('login-msg');m.textContent='登入已過期或失效,請重新登入。';m.hidden=false;return;
+      clearAuth();document.body.style.visibility='hidden';location.replace('../index.html');return;
     }
     if(e&&e.code==='forbidden'){document.getElementById('cols').hidden=true;document.getElementById('denied').hidden=false;return}
     if(msg)toast(msg);
-  }
-  function doLogin(name,code){
-    var m=document.getElementById('login-msg');m.hidden=true;
-    post(CFG.AUTH_URL,{action:'login',name:name,code:code}).then(function(d){
-      if(!d||!d.ok){m.textContent=(d&&d.error==='locked')?'嘗試次數過多,請稍後再試。':'姓名或通行碼不正確。';m.hidden=false;return}
-      try{
-        localStorage.setItem('yoho_token',d.token);localStorage.setItem('yoho_exp',String(d.exp));
-        localStorage.setItem('yoho_role',d.role);localStorage.setItem('yoho_name',d.name);localStorage.setItem('yoho_label',d.label||'');
-      }catch(e){}
-      document.getElementById('token-in').value='';
-      refreshApi();cloudLoad();
-    }).catch(function(){m.textContent='連線失敗,請確認網路。';m.hidden=false});
   }
   var syncT=null;
   function save(){
@@ -611,10 +587,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
         copy(cs.map(textFor).join('\n\n')).then(function(ok){toast(ok?'已複製 '+cs.length+' 台車':'請長按文字手動複製')});break;
       case 'pick-att':photoMode='att';document.getElementById('photo-in').click();break;
       case 'pick-board':photoMode='board';document.getElementById('photo-in').click();break;
-      case 'login':
-        var nm=document.getElementById('name-in').value.trim(),cd=document.getElementById('token-in').value.trim();
-        if(nm&&cd)doLogin(nm,cd);break;
-      case 'logout':clearAuth();refreshApi();toast('已登出');break;
+      case 'logout':clearAuth();location.replace('../index.html');break;
       case 'stop':if(ctl)ctl.abort();break;
       case 'imp-replace':applyImport('replace');break;
       case 'imp-merge':applyImport('merge');break;
@@ -817,12 +790,10 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
     if(f&&sample)recognize(f);
   });
 
-  var $login=document.getElementById('login');
   function refreshApi(){
     var on=hasApi(),nm='';
     try{nm=localStorage.getItem('yoho_name')||''}catch(e){}
     sample=on;maxImgs=3;$photo.hidden=!on;
-    $login.hidden=!(CFG.AUTH_URL&&CFG.APP_URL&&!getToken());
     document.getElementById('userbar').hidden=!on;
     var lb='';try{lb=localStorage.getItem('yoho_label')||''}catch(e){}
     document.getElementById('user-label').textContent=on?(nm+(lb?' · '+lb:'')):'';
