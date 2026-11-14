@@ -726,7 +726,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
       '任務:依編號順序,讀出每一列。\n規則:\n'+
       '- 姓名逐字照寫,不要改字。\n- 圓點寫 "車",「自」字寫 "自",空白寫 ""。\n'+
       '- 灰色字的列(結案)也要輸出,備註照寫;備註為空就寫 ""。\n- 表格標題上的日期(例如 115/11/12)寫在 date。\n'+
-      '只回覆 JSON,格式:{"date":"115/11/12","people":[{"name":"王小明","c":"車","b":"車","note":""}]}';
+      '只回覆 JSON,為了縮短回應,每位長輩只用一個陣列 [姓名,來,回,備註],不要加其他欄位。格式:{"date":"115/11/12","rows":[["王小明","車","車",""],["李小華","自","車","休假"]]}';
   }
   function cleanBoard(d){
     if(!d||!Array.isArray(d.cars))return null;
@@ -741,9 +741,11 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
     return {cars:cars,uncertain:unc};
   }
   function cleanAtt(d){
-    if(!d||!Array.isArray(d.people))return null;
+    if(!d)return null;
+    var list=Array.isArray(d.rows)?d.rows.map(function(r){return {name:r[0],c:r[1],b:r[2],note:r[3]}}):(Array.isArray(d.people)?d.people:null);
+    if(!list)return null;
     var people={},cnt=0;
-    d.people.forEach(function(p){
+    list.forEach(function(p){
       var n=String((p&&p.name)||'').replace(/\s/g,'');if(!n)return;
       var v=function(x){x=String(x||'').trim();return x==='車'||x==='●'?'車':(x==='自'?'自':'')};
       people[n]={c:v(p.c),b:v(p.b),note:String(p.note||'').trim()};cnt++;
