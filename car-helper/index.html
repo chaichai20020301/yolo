@@ -327,7 +327,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
       clearAuth();document.body.style.visibility='hidden';location.replace('../index.html');return;
     }
     if(e&&e.code==='forbidden'){document.getElementById('cols').hidden=true;document.getElementById('denied').hidden=false;return}
-    if(msg)toast(msg);
+    if(msg)toast(msg+(e&&e.message?'('+e.message+')':''),true);
   }
   var syncT=null;
   function save(){
@@ -514,9 +514,10 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
   }
   function renderAll(focusId){renderTabs();renderEditor(focusId);renderCheck();renderPreview()}
 
-  function toast(msg){
-    $toast.innerHTML=ico('common-icon-check')+'<span></span>';$toast.lastChild.textContent=msg;$toast.hidden=false;
-    clearTimeout(toast.t);toast.t=setTimeout(function(){$toast.hidden=true},2200);
+  function toast(msg,bad){
+    $toast.innerHTML=ico(bad?'common-icon-warning':'common-icon-check')+'<span></span>';$toast.lastChild.textContent=msg;
+    $toast.style.background=bad?'var(--danger)':'';$toast.hidden=false;
+    clearTimeout(toast.t);toast.t=setTimeout(function(){$toast.hidden=true},bad?6000:2200);
   }
   function copy(text){
     var p;
@@ -809,7 +810,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
         }
         save();
       }catch(e){}
-    }).catch(function(e){onApiErr(e)});
+    }).catch(function(e){onApiErr(e,'讀取雲端資料失敗')});
   }
   refreshApi();
   renderAll();
