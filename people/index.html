@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f7a53">
+<title>人員名單管理 · 悠活社區長照機構</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<script src="../config.js"></script>
+<style>
+  :root{
+    --paper:#FAF8EF; --banner:#F5F6E6; --card:#FFFDF8; --ink:#092F25; --muted:#4D695A; --line:#D3D8C8;
+    --green:#14563F; --orange:#B65B16; --teal:#27675F; --red:#A63124;
+    --serif:"Noto Serif TC","Songti TC",serif;
+    --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:var(--sans);font-weight:500;color:var(--ink);background:var(--paper);min-height:100vh;
+    padding-bottom:calc(40px + env(safe-area-inset-bottom))}
+  button,input,select{font-family:inherit}
+  button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+  [hidden]{display:none!important}
+  .wrap{width:calc(100% - 32px);max-width:1100px;margin:0 auto}
+
+  .topbar{position:sticky;top:0;z-index:60;background:rgba(250,248,239,.96);border-bottom:1px solid #e3e5d8;
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .topbar-in{min-height:64px;display:flex;align-items:center;gap:14px}
+  .back{flex:none;display:inline-flex;align-items:center;min-height:40px;padding:0 16px;background:var(--green);color:#fff;border-radius:999px;
+    font-weight:700;font-size:14px;text-decoration:none}
+  .tb-logo{height:40px;width:auto;mix-blend-mode:multiply;flex:none}
+  .tb-title{font:900 18px var(--serif);color:var(--green);border-left:1px solid #b3bdb0;padding-left:14px;white-space:nowrap}
+  .me{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
+
+  .banner{background:var(--banner);border-radius:22px;margin:20px 0 16px;padding:24px 28px;box-shadow:0 6px 15px rgba(25,62,37,.06)}
+  .banner h1{font:900 clamp(24px,4vw,30px)/1.3 var(--serif)}
+  .banner p{color:var(--muted);font-size:14.5px;line-height:1.7;margin:8px 0 14px;max-width:760px}
+  .banner p b{background:#E2EFD3;color:var(--green);padding:1px 6px;border-radius:6px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{min-height:44px;border:0;border-radius:999px;padding:0 22px;font-weight:700;font-size:15px;cursor:pointer}
+  .btn.main{background:var(--green);color:#fff}
+  .btn.sec{background:var(--card);color:var(--green);border:1.5px solid #B5CDA2}
+  .btn:disabled{opacity:.5;cursor:default}
+
+  .cols{display:grid;grid-template-columns:minmax(220px,260px) minmax(0,1fr);gap:20px;align-items:start}
+  .side{position:sticky;top:80px;display:flex;flex-direction:column;gap:12px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px}
+  .panel h2{font-size:15px;font-weight:700;margin-bottom:2px}
+  .panel .tip{color:var(--muted);font-size:12.5px;margin-bottom:8px}
+  #stats{display:flex;flex-direction:column;gap:4px}
+  .st{display:flex;align-items:center;width:100%;min-height:42px;padding:0 12px;border:1px solid transparent;border-radius:14px;background:none;
+    font-size:14.5px;color:#3E5A4C;cursor:pointer;text-align:left}
+  .st b{margin-left:auto;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .st:hover{background:#EEF3E4}
+  .st.on{background:#E2EFD3;border-color:#B5CDA2;color:var(--green)}
+  .note{background:#FFF0D7;border:1px solid #EDC58D;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.6;color:#5E3A12}
+  .note b{color:#8A4A12}
+  .note.plain{background:var(--card);border-color:var(--line);color:var(--muted)}
+
+  .msg{min-height:0;margin:0 2px 8px;font-size:14px;font-weight:700}
+  .msg:empty{display:none}
+  .msg.err{color:var(--red)}.msg.ok{color:var(--green)}
+  .tbl{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+  .row{display:grid;grid-template-columns:1.1fr 1fr .7fr 1.2fr 224px;gap:10px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--line);font-size:15px}
+  .row:last-child{border-bottom:0}
+  .row.h{background:#F3F4EA;color:var(--muted);font-weight:700;font-size:13px}
+  .row:not(.h):hover{background:#FBFAF2}
+  .row.off{opacity:.55}
+  .c-name b{font-size:15.5px}
+  .c-last{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .tag{display:inline-block;padding:3px 12px;border-radius:999px;font-size:13px;font-weight:700;background:#EAF3DC;color:var(--green)}
+  .tag.r-manager{background:#FFF0D7;color:#8A4A12}
+  .tag.r-sysadmin{background:var(--green);color:#fff}
+  .tag.r-nurse,.tag.r-nurseadmin{background:#E6F1EE;color:#1D5049}
+  .tag.x{background:#EEEEE8;color:#6F7A72}
+  .act{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+  .act button{min-height:38px;padding:0 14px;border:1.5px solid #B5CDA2;border-radius:999px;background:var(--card);color:var(--green);font-size:13.5px;font-weight:500;cursor:pointer}
+  .act button:hover{background:#EEF3E4}
+  .act button.code{min-width:104px;font-variant-numeric:tabular-nums}
+  .act button.code.on{background:#FFF0D7;border-color:var(--orange);color:#8A4A12;font-weight:700;letter-spacing:3px;font-size:15px}
+  .locked{font-size:12.5px;color:var(--muted)}
+  .empty{padding:36px 20px;text-align:center;color:var(--muted)}
+
+  .modal{position:fixed;inset:0;background:rgba(9,47,37,.42);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+  .modal.show{display:flex}
+  .box{background:var(--card);border-radius:22px;padding:22px;width:100%;max-width:460px;max-height:92vh;overflow:auto;box-shadow:0 18px 40px rgba(9,47,37,.2)}
+  .box h2{font:900 21px var(--serif);margin-bottom:14px}
+  .f{margin-bottom:12px}
+  .f label{display:block;margin-bottom:4px;font-weight:700;font-size:14px;color:#3E5A4C}
+  .f input[type=text],.f input[type=password]{width:100%;min-height:46px;padding:0 12px;border:1.5px solid var(--line);border-radius:12px;font-size:16px;background:var(--card);color:var(--ink)}
+  .f input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 4px rgba(182,91,22,.12)}
+  .f .hint{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .f.chk label{display:flex;gap:8px;align-items:center;font-weight:500}
+  .f.chk input{width:18px;height:18px;accent-color:var(--green)}
+  .roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .role{min-height:44px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);font-size:14px;font-weight:600;color:#3E5A4C;cursor:pointer}
+  .role.on{border-color:var(--green);background:#E2EFD3;color:var(--green);box-shadow:0 0 0 3px rgba(20,86,63,.12)}
+  #fMsg:not(:empty){background:#FBECE9;border-radius:12px;padding:9px 12px;font-size:13.5px;line-height:1.6;color:var(--red);font-weight:700;margin-bottom:8px}
+  .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+
+  @media (max-width:860px){
+    .cols{grid-template-columns:1fr}
+    .side{position:static}
+    #stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}
+    .note.plain{display:none}
+  }
+  @media (max-width:640px){
+    .tb-logo,.me span.nm{display:none}
+    .tb-title{font-size:16px}
+    .banner{padding:18px 18px}
+    .tbl{background:none;border:0;overflow:visible}
+    .row.h{display:none}
+    .row{background:var(--card);border:1px solid var(--line)!important;border-radius:16px;margin-bottom:8px;padding:12px 14px;
+      grid-template-columns:1fr auto;grid-template-areas:"n r" "l l" "a a";row-gap:6px}
+    .row .c-name{grid-area:n}.row .c-role{grid-area:r}.row .c-last{grid-area:l}.row .c-st{display:none}
+    .act{grid-area:a;justify-content:stretch}
+    .act button{flex:1}
+    .modal{align-items:flex-end;padding:0}
+    .box{border-radius:22px 22px 0 0;max-width:none}
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="back" href="../index.html">&larr; 入口網站</a>
+    <img class="tb-logo" src="../assets/logo.jpg" alt="悠活社區長照機構">
+    <span class="tb-title">人員名單管理</span>
+    <div class="me" id="me" hidden><span class="avatar" id="meAv">—</span><span class="nm" id="meName">—</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="banner">
+    <h1>人員名單管理</h1>
+    <p>這裡管理誰可以登入入口網站、是什麼身份。同仁忘記通行碼時,按該員的「看通行碼」查看(20 秒後自動隱藏,<b>每次查看都會留下紀錄</b>);要換通行碼請按「編輯」直接設定新的 6 位數字。停用或改身份後,最多 5 分鐘內各系統生效。</p>
+    <div class="bar"><button class="btn main" id="add" type="button">新增人員</button><button class="btn sec" id="reload" type="button">重新整理</button></div>
+  </section>
+
+  <div class="cols">
+    <aside class="side">
+      <div class="panel"><h2>身份統計</h2><div class="tip">點一下只看該身份</div><div id="stats"></div></div>
+      <div class="note"><b>每次查看通行碼都會留下紀錄</b><br>按「看通行碼」後 20 秒自動隱藏,再按一下也能馬上隱藏。</div>
+      <div class="note plain">同名的同仁請在名字加上能分辨的字,例如「(2樓)」。系統管理員只有系統管理員能管理。</div>
+    </aside>
+    <section>
+      <div class="msg" id="msg" role="status"></div>
+      <div class="tbl" id="tbl"><div class="empty">載入中…</div></div>
+    </section>
+  </div>
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><div class="box">
+  <h2 id="mt">新增人員</h2>
+  <div class="f"><label for="fName">姓名</label><input id="fName" type="text" maxlength="20" autocomplete="off"><div class="hint" id="nameHint">登入時要打的姓名(不分大小寫、空白)。</div></div>
+  <div class="f"><label>身份</label><div class="roles" id="roleTiles"></div></div>
+  <div class="f"><label for="fCode">通行碼</label><input id="fCode" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" placeholder="6 位數字"><div class="hint" id="codeHint">每人自己的 6 位數字,不要重複、不要用 123456 或生日。</div></div>
+  <div class="f chk"><label><input id="fActive" type="checkbox" checked> 啟用(取消勾選=停用,無法登入)</label></div>
+  <div id="fMsg" role="alert"></div>
+  <div class="btns"><button class="btn sec" id="cancel" type="button">取消</button><button class="btn main" id="save" type="button">儲存</button></div>
+</div></div>
+
+<script>
+var AUTH = (window.YOHO_CONFIG || {}).AUTH_URL || "";
+var ROLES = { manager:"主管", sysadmin:"系統管理員", admin:"行政", nurseadmin:"護理行政", nurse:"護理", care:"照服" };
+var ME = null, people = [], editing = null, saving = false, FILTER = "", pickedRole = "nurse";
+var $ = function(id){ return document.getElementById(id); };
+var ERR = {
+  forbidden:"沒有權限做這個操作。",
+  invalid:"資料不正確:姓名 1 到 20 字、通行碼要是 6 位數字(新增人員必填)。",
+  last_manager:"至少要留一位「啟用中的主管」(系統管理員不算在內)。請先設定另一位主管。",
+  busy:"系統忙碌中,請稍後再試。",
+  exists:"名單裡已經有同名的人(不分大小寫、空白)。同名的同仁請加上能分辨的字,例如「(2樓)」;要改原本那位請按他的「編輯」。",
+  not_found:"名單裡找不到這個人,請重新整理。"
+};
+function ls(k){ try{ return localStorage.getItem(k) || ""; }catch(e){ return ""; } }
+function token(){ var t = ls("yoho_token"), exp = parseInt(ls("yoho_exp") || "0", 10); return (t && exp > Math.floor(Date.now()/1000)) ? t : ""; }
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function kick(){
+  try{ ["yoho_token","yoho_exp","yoho_role","yoho_name","yoho_label"].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+  location.replace("../index.html");
+}
+function call(payload){
+  var t = token(); if(!t || !AUTH){ kick(); return Promise.reject(new Error("unauthorized")); }
+  payload.token = t;
+  return fetch(AUTH, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body:JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if(j && j.error === "unauthorized"){ kick(); throw new Error("unauthorized"); } return j; });
+}
+function say(el, text, ok){ el.textContent = text || ""; el.className = "msg " + (ok ? "ok" : "err"); }
+function isSys(){ return !!ME && ME.realRole === "sysadmin"; }
+function canManage(p){ return p.role !== "sysadmin" || isSys(); }
+function fmtLast(v){
+  if(!v) return "尚未登入";
+  var d = new Date(v); if(isNaN(d)) return esc(v);
+  var z = function(n){ return ("0" + n).slice(-2); };
+  return d.getFullYear() + "/" + z(d.getMonth()+1) + "/" + z(d.getDate()) + " " + z(d.getHours()) + ":" + z(d.getMinutes());
+}
+function visibleRoles(){ return Object.keys(ROLES).filter(function(r){ return r !== "sysadmin" || isSys(); }); }
+
+function drawStats(){
+  var cnt = {}; people.forEach(function(p){ cnt[p.role] = (cnt[p.role] || 0) + (p.active ? 1 : 0); });
+  var off = people.filter(function(p){ return !p.active; }).length;
+  var h = '<button class="st' + (FILTER === "" ? " on" : "") + '" data-f="" type="button">全部<b>' + (people.length - off) + '</b></button>';
+  Object.keys(ROLES).forEach(function(r){
+    if(r === "sysadmin" && !cnt[r]) return;
+    h += '<button class="st' + (FILTER === r ? " on" : "") + '" data-f="' + r + '" type="button">' + ROLES[r] + '<b>' + (cnt[r] || 0) + '</b></button>';
+  });
+  h += '<button class="st' + (FILTER === "off" ? " on" : "") + '" data-f="off" type="button">已停用<b>' + off + '</b></button>';
+  $("stats").innerHTML = h;
+  $("stats").querySelectorAll("[data-f]").forEach(function(b){ b.onclick = function(){ FILTER = b.dataset.f; draw(); }; });
+}
+function draw(){
+  drawStats();
+  if(!people.length){ $("tbl").innerHTML = '<div class="empty">還沒有任何人員</div>'; return; }
+  var rows = people.map(function(p, i){
+    if(FILTER === "off" ? p.active : (FILTER && (p.role !== FILTER || !p.active))) return "";
+    var acts = canManage(p)
+      ? '<button class="code" data-c="' + i + '" type="button">看通行碼</button><button class="edit" data-e="' + i + '" type="button">編輯</button>'
+      : '<span class="locked">只有系統管理員能管理</span>';
+    return '<div class="row' + (p.active ? "" : " off") + '"><div class="c-name"><b>' + esc(p.name) + '</b></div>' +
+      '<div class="c-role"><span class="tag r-' + esc(p.role) + '">' + esc(ROLES[p.role] || p.role) + '</span></div>' +
+      '<div class="c-st"><span class="tag' + (p.active ? "" : " x") + '">' + (p.active ? "啟用" : "停用") + '</span></div>' +
+      '<div class="c-last">' + fmtLast(p.last) + '</div><div class="act">' + acts + '</div></div>';
+  }).join("") || '<div class="empty">這個身份目前沒有人員</div>';
+  $("tbl").innerHTML = '<div class="row h"><div>姓名</div><div>身份</div><div>狀態</div><div>最近登入</div><div></div></div>' + rows;
+  $("tbl").querySelectorAll("[data-e]").forEach(function(b){ b.onclick = function(){ openForm(people[+b.dataset.e]); }; });
+  $("tbl").querySelectorAll("[data-c]").forEach(function(b){ b.onclick = function(){ showCode(b, people[+b.dataset.c]); }; });
+}
+function load(){
+  say($("msg"), "");
+  call({ action:"verify" }).then(function(me){
+    if(!me || !me.ok){ kick(); return; }
+    ME = me;
+    $("me").hidden = false; $("meAv").textContent = (me.name || "—").trim().charAt(0) || "—";
+    $("meName").textContent = me.name + (me.label ? " · " + me.label : "");
+    if(me.role !== "manager"){ $("tbl").innerHTML = '<div class="empty">只有主管和系統管理員可以使用這個頁面。</div>'; $("add").disabled = true; return; }
+    return call({ action:"people.list" }).then(function(j){
+      if(!j || !j.ok){ $("tbl").innerHTML = '<div class="empty">' + (j && j.error === "forbidden" ? "只有主管和系統管理員可以使用這個頁面。" : "載入失敗,請稍後再試。") + '</div>'; return; }
+      people = j.people || []; draw();
+    });
+  }).catch(function(e){ if(e.message !== "unauthorized") $("tbl").innerHTML = '<div class="empty">連線失敗,請檢查網路後重新整理。</div>'; });
+}
+/* 查看單一人員的通行碼(給忘記的同仁);20 秒後自動隱藏,每次查看後端都會記錄 */
+function showCode(b, p){
+  if(b.classList.contains("on")){ hideCode(b); return; }
+  b.disabled = true; b.textContent = "查詢中…";
+  call({ action:"people.code", name:p.name }).then(function(j){
+    b.disabled = false;
+    if(j && j.ok){ b.textContent = j.code; b.classList.add("on"); b.title = "再按一下隱藏"; clearTimeout(b._t); b._t = setTimeout(function(){ hideCode(b); }, 20000); }
+    else { b.textContent = "看通行碼"; say($("msg"), ERR[j && j.error] || "查詢失敗,請稍後再試。"); }
+  }).catch(function(e){ b.disabled = false; b.textContent = "看通行碼"; if(e.message !== "unauthorized") say($("msg"), "連線失敗,請檢查網路後再試。"); });
+}
+function hideCode(b){ clearTimeout(b._t); b.classList.remove("on"); b.textContent = "看通行碼"; b.title = ""; }
+
+function drawRoleTiles(){
+  $("roleTiles").innerHTML = visibleRoles().map(function(r){
+    return '<button type="button" class="role' + (pickedRole === r ? " on" : "") + '" data-r="' + r + '">' + ROLES[r] + '</button>';
+  }).join("");
+  $("roleTiles").querySelectorAll("[data-r]").forEach(function(b){ b.onclick = function(){ pickedRole = b.dataset.r; drawRoleTiles(); }; });
+}
+function openForm(p){
+  editing = p || null; $("mt").textContent = p ? "編輯人員" : "新增人員";
+  $("fName").value = p ? p.name : ""; $("fName").disabled = !!p; $("fCode").value = "";
+  pickedRole = p ? p.role : "nurse"; drawRoleTiles();
+  $("fActive").checked = p ? !!p.active : true;
+  $("nameHint").textContent = p ? "姓名不能修改;要改名請新增一位並停用舊的。" : "登入時要打的姓名(不分大小寫、空白)。";
+  $("codeHint").textContent = p ? "要換通行碼才填(6 位數字);不換請留空。" : "每人自己的 6 位數字,不要重複、不要用 123456 或生日。";
+  say($("fMsg"), ""); $("modal").classList.add("show");
+  setTimeout(function(){ try{ (p ? $("fCode") : $("fName")).focus(); }catch(e){} }, 30);
+}
+function closeForm(){ $("modal").classList.remove("show"); }
+function save(){
+  if(saving) return;
+  var name = $("fName").value.trim(), code = $("fCode").value.trim(), active = $("fActive").checked;
+  var fm = $("fMsg"); fm.textContent = "";
+  if(!name){ fm.textContent = "請填寫姓名。"; return; }
+  if(code && !/^\d{6}$/.test(code)){ fm.textContent = "通行碼必須是 6 位數字。"; return; }
+  if(!editing && !code){ fm.textContent = "新增人員必須設定 6 位數通行碼。"; return; }
+  if(code && (/^(\d)\1{5}$/.test(code) || code === "123456" || code === "654321")){ fm.textContent = "通行碼太容易猜,請換一組。"; return; }
+  if(editing && ME && editing.name === ME.name && !active){ fm.textContent = "不能停用自己的帳號。"; return; }
+  var payload = { action:"people.save", name:name, role:pickedRole, active:active };
+  if(code) payload.code = code; if(!editing) payload.mode = "add";
+  saving = true; $("save").disabled = true;
+  call(payload).then(function(j){
+    saving = false; $("save").disabled = false;
+    if(j && j.ok){ closeForm(); say($("msg"), (j.created ? "已新增 " : "已更新 ") + name + "。", true); load(); }
+    else fm.textContent = ERR[j && j.error] || "儲存失敗,請稍後再試。";
+  }).catch(function(e){ saving = false; $("save").disabled = false; if(e.message !== "unauthorized") fm.textContent = "連線失敗,請檢查網路後再試。"; });
+}
+$("add").onclick = function(){ openForm(null); };
+$("reload").onclick = load; $("cancel").onclick = closeForm; $("save").onclick = save;
+$("modal").addEventListener("click", function(e){ if(e.target === $("modal")) closeForm(); });
+document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeForm(); });
+if(!token() || !AUTH){ kick(); } else { load(); }
+</script>
+</body>
+</html>

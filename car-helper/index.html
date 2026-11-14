@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="車趟系統">
+<meta name="theme-color" content="#1f7a53">
+<title>車趟系統</title>
+<script src="../config.js"></script>
+<script src="config.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap">
+<style>
+/* 版面依「車趟系統 設計稿 1~5」:頂列+圓角橫幅;寬螢幕兩欄(左:匯入/車輛/編輯,右:出席核對/LINE 預覽),窄螢幕單欄。主色系:淡藍綠。 */
+:root{
+  --bg:#FAF8EF; --surface:#FFFDF8; --banner:#F5F6E6; --fg:#092F25; --muted:#4D695A; --line:#D3D8C8; --panel-line:#E3E5D8;
+  --accent:#27675F; --accent-fg:#ffffff; --accent-soft:#E6F1EE; --accent-line:#AACAC2; --green:#14563F;
+  --orange:#B65B16; --orange-soft:#FFF0D7; --orange-line:#EDC58D;
+  --danger:#A63124; --danger-soft:#FBECE9; --gray:#6F7A72; --gray-soft:#EEEEE8;
+  color-scheme:light;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-serif:"Noto Serif TC","Songti TC",serif;
+  --font-num:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-weight:500;font-size:16px;line-height:1.5;margin:0;
+  padding-bottom:calc(48px + env(safe-area-inset-bottom,0px))}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.wrap{width:calc(100% - 32px);max-width:1400px;margin:0 auto;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.ic{display:inline-block;flex:none;width:1.3em;height:1.3em;background:currentColor;vertical-align:-.3em;
+  -webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat}
+
+/* 頂列 */
+.topbar{position:sticky;top:0;z-index:60;background:rgba(250,248,239,.96);border-bottom:1px solid #e3e5d8;padding-top:env(safe-area-inset-top,0px);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.topbar-in{min-height:64px;display:flex;align-items:center;gap:14px}
+.back{flex:none;display:inline-flex;align-items:center;min-height:40px;padding:0 16px;background:var(--green);color:#fff;border-radius:999px;
+  font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 3px 8px rgba(20,86,63,.22)}
+.tb-logo{height:40px;width:auto;mix-blend-mode:multiply;flex:none}
+.tb-title{font:900 18px var(--font-serif);color:var(--green);border-left:1px solid #b3bdb0;padding-left:14px;white-space:nowrap}
+.userbar{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
+.logout{border:0;background:none;color:var(--muted);min-height:44px;padding:0 4px;font-size:14px}
+.logout:hover{color:var(--accent)}
+
+/* 橫幅 */
+.banner{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;min-height:150px;margin:18px 0 16px;padding:20px 26px;
+  background:var(--banner);border-radius:22px;box-shadow:0 6px 15px rgba(25,62,37,.06)}
+.banner .txt{position:relative;z-index:1;max-width:52%}
+.banner h1{margin:0;font:900 clamp(26px,4vw,34px)/1.25 var(--font-serif);letter-spacing:.03em}
+.banner p{margin:6px 0 0;color:var(--muted);font-size:14.5px}
+.banner .art{position:absolute;right:0;bottom:0;height:100%;width:auto;max-width:56%;object-fit:contain;object-position:right bottom;z-index:0;pointer-events:none}
+
+/* 兩欄與面板 */
+.cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1000px){.cols{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--panel-line);border-radius:20px;padding:18px;box-shadow:0 4px 12px rgba(25,62,37,.04)}
+.card h2.t{margin:0 0 6px;font:900 18px var(--font-serif);display:flex;align-items:center;gap:8px}
+.card h2.t .ic{color:var(--accent);width:1.4em;height:1.4em}
+.hint{color:var(--muted);font-size:14px;margin:0 0 8px}
+
+/* 按鈕與輸入 */
+.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:999px;font-weight:700;font-size:15.5px}
+.primary{border:0;background:var(--accent);color:var(--accent-fg);box-shadow:0 3px 8px rgba(39,103,95,.2)}
+.secondary{border:1.5px solid var(--accent);background:var(--surface);color:var(--accent)}
+.secondary:hover{background:var(--accent-soft)}
+.armed{background:var(--danger)!important;border-color:var(--danger)!important;color:#fff!important}
+.ghost{display:inline-flex;align-items:center;gap:6px;background:none;border:0;color:var(--muted);min-height:36px;padding:0 8px;border-radius:999px;font-size:14px}
+.ghost.danger{color:var(--danger)}
+.btn-danger{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border:1.5px solid var(--danger);border-radius:999px;background:var(--surface);color:var(--danger);font-weight:700;font-size:15px}
+label{font-size:13px;color:var(--muted);letter-spacing:.04em}
+input[type=text],input[type=number],input[type=password],input:not([type]){font:inherit;font-size:16px;color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:0 12px;min-height:44px;width:100%;min-width:0}
+input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39,103,95,.14)}
+.num-input{font-family:var(--font-num);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* 拍照匯入 */
+.photo-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.status{display:flex;align-items:center;gap:12px;margin:12px 0 0;padding:10px 14px;border-radius:14px;background:var(--accent-soft);font-size:15px}
+.status.err{background:var(--danger-soft);color:var(--danger);font-weight:700}
+.status.ok{background:#EAF3DC;color:var(--green);font-weight:700}
+.status img{width:64px;height:64px;flex:none;animation:sway 2.2s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--accent-line);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin,.status img{animation:none}}
+.result{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.result ul{margin:6px 0 10px;padding-left:20px;font-size:15px;font-variant-numeric:tabular-nums}
+.warn{display:flex;gap:8px;align-items:center;background:var(--orange-soft);border:1px solid var(--orange-line);border-radius:12px;padding:8px 12px;font-size:15px;margin:0 0 10px;color:#5E3A12}
+.file-in{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.loginform{display:grid;gap:8px;max-width:420px}
+
+/* 車輛分頁與來程/回程 */
+.tabs{position:sticky;top:calc(65px + env(safe-area-inset-top,0px));z-index:5;background:var(--surface);border:1px solid var(--panel-line);border-radius:20px;padding:12px;box-shadow:0 4px 12px rgba(25,62,37,.04)}
+.tabs-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tabs-row::-webkit-scrollbar{display:none}
+.tab{flex:none;min-height:44px;min-width:64px;padding:0 16px;border:1.5px solid transparent;background:var(--accent-soft);color:var(--fg);border-radius:12px;font-family:var(--font-num);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-fg)}
+.tab.add{background:none;color:var(--accent);font-family:var(--font-body);font-size:15px;font-weight:500;border:1.5px dashed var(--accent-line)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:10px;background:var(--accent-soft);border-radius:14px;padding:4px}
+.seg button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;border:0;border-radius:11px;background:none;color:var(--accent);font-size:15px;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);box-shadow:0 2px 6px rgba(39,103,95,.25)}
+
+/* 車輛編輯 */
+.fields{display:grid;grid-template-columns:1fr 1.5fr .8fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.trips{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-top:16px}
+.trip{min-width:0;background:#FBFAF2;border:1px solid var(--panel-line);border-radius:18px;padding:14px}
+.trip-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.trip-head h3{margin:0;font:900 17px var(--font-serif);display:flex;align-items:center;gap:6px;flex:1;min-width:90px}
+.trip-head h3 .ic{color:var(--accent)}
+.count{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
+.count.over{color:var(--danger)}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:12.5px;font-weight:700}
+.pill.red{background:var(--danger-soft);color:var(--danger)}
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:2px 8px}
+.idx{font-family:var(--font-num);font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700;text-align:center;background:var(--accent-soft);border-radius:8px;font-size:14px;line-height:26px}
+.row input{min-height:42px;padding:0 10px}
+.row.flag .idx{background:var(--danger-soft);color:var(--danger)}
+.row.flag input{border-color:var(--danger);background:var(--danger-soft)}
+.flagline{grid-column:2 / 4;font-size:13px;color:var(--danger);font-weight:700;margin-bottom:2px}
+.acts{display:flex;gap:4px}
+.ib{width:38px;height:38px;border:1px solid var(--accent-line);background:var(--surface);color:var(--accent);border-radius:10px;display:grid;place-items:center}
+.ib .ic{width:18px;height:18px;vertical-align:0}
+.ib.x{color:var(--danger);border-color:#E6C9C4}
+.ib:disabled{opacity:.35}
+.addrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:12px}
+.addhint{margin:4px 2px 0;color:var(--muted);font-size:13px}
+.card-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px;flex-wrap:wrap}
+.empty{text-align:center;padding:10px 8px 4px}
+.empty img{width:min(220px,60%);height:auto;margin:0 auto 6px;display:block}
+.empty h3{margin:0 0 2px;font:900 22px var(--font-serif)}
+.empty p{margin:0 0 14px;color:var(--muted);font-size:15px}
+.empty .btns2{display:grid;gap:10px;max-width:360px;margin:0 auto}
+
+/* 出席核對 */
+.dirpill{display:flex;align-items:center;gap:8px;background:var(--accent-soft);border-radius:12px;padding:8px 14px;font-weight:700;color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);margin:10px 0 14px;border:1px solid var(--panel-line);border-radius:14px;background:var(--surface)}
+.stat{padding:10px 8px;text-align:center}
+.stat + .stat{border-left:1px solid var(--panel-line)}
+.stat span{display:block;font-size:13.5px;color:var(--muted)}
+.stat b{font:900 30px/1.2 var(--font-num);font-variant-numeric:tabular-nums}
+.stat b small{font-size:15px;font-weight:700;margin-left:2px}
+.stat.wait b{color:var(--orange)}
+.sec-title{display:flex;align-items:center;gap:6px;margin:16px 0 8px;font:700 15px var(--font-body);color:var(--fg)}
+.sec-title .ic{color:var(--orange)}
+.sec-title.bad .ic{color:var(--danger)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{min-height:42px;padding:0 16px;border:1.5px solid var(--accent-line);border-radius:999px;background:var(--surface);color:var(--fg);font-size:16px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.pickto{background:var(--accent-soft);border-radius:14px;padding:12px;margin:0 0 8px}
+.pickto p{margin:0 0 8px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.pickto .btns{display:flex;flex-wrap:wrap;gap:8px}
+.pickto .btns button{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:0 16px;border:1.5px solid var(--accent);border-radius:12px;background:var(--surface);color:var(--accent);font-weight:700}
+.pickto .btns button.over{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
+.flaglist{list-style:none;margin:6px 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}
+.flaglist li{display:flex;gap:8px;align-items:flex-start;background:var(--danger-soft);border-radius:12px;padding:8px 12px;font-size:15px;color:#7A2A20}
+.flaglist li .ic{color:var(--danger);margin-top:2px}
+.ok-state{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:8px 0 0;border:1px solid #CFE3BF;background:#F1F7E8;border-radius:16px;margin-top:14px}
+.ok-state img{width:150px;height:auto}
+.ok-state p{margin:0 0 14px;font-weight:700;color:var(--green);font-size:15px}
+
+/* LINE 預覽 */
+.preview-card h2{margin:0 0 10px;font:900 17px var(--font-serif);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.preview-card h2 .ic{color:var(--accent);width:1.4em;height:1.4em}
+.preview-card h2 small{font:500 14px var(--font-body);color:var(--muted)}
+.bubble{background:var(--accent-soft);border-radius:6px 20px 20px 20px;padding:14px 18px;margin:0;font-family:var(--font-body);font-size:16px;line-height:1.65;white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text;max-width:100%}
+.copy-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:8px;background:var(--green);color:#fff;padding:12px 22px;border-radius:999px;font-weight:700;font-size:15px;z-index:70;max-width:calc(100vw - 32px);box-shadow:0 6px 16px rgba(9,47,37,.25)}
+.denied{text-align:center;padding:28px 18px}
+.denied img{width:200px;max-width:60%;height:auto}
+.denied h2{margin:6px 0 4px;font:900 26px var(--font-serif)}
+.denied p{margin:0 0 16px;color:var(--muted)}
+
+@media (max-width:640px){
+  .tb-logo,.userbar #user-label{display:none}
+  .tb-title{font-size:17px}
+  .banner{padding:16px 16px;min-height:120px;margin:14px 0 12px}
+  .banner .txt{max-width:54%}
+  .banner h1{font-size:24px}
+  .banner p{font-size:13.5px}
+  .banner .art{max-width:44%;opacity:.95}
+  .card{padding:14px}
+  .fields{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .photo-btns{grid-template-columns:1fr}
+  .copy-row{grid-template-columns:1fr}
+  .trips{grid-template-columns:minmax(0,1fr)}
+  .stat b{font-size:26px}
+}
+@media (max-width:420px){.fields{grid-template-columns:1fr 1fr}.fields .field:nth-child(2){grid-column:1 / -1;order:3}}
+@media (prefers-reduced-motion:no-preference){.tab,.primary,.secondary,.ib,.chip{transition:background .15s,color .15s}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="back" href="../index.html">&larr; 入口網站</a>
+    <img class="tb-logo" src="../assets/logo.jpg" alt="悠活社區長照機構">
+    <span class="tb-title">車趟系統</span>
+    <div class="userbar" id="userbar" hidden><span class="avatar" id="user-av">—</span><span id="user-label"></span><button class="logout" type="button" data-a="logout">登出</button></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="banner">
+    <div class="txt">
+      <h1>車趟系統</h1>
+      <p>匯入今天的出席表,排好來程與回程的車趟,一鍵轉成 LINE 訊息。</p>
+    </div>
+    <img class="art" src="assets/trip-banner.webp" alt="">
+  </section>
+
+  <section class="card denied" id="denied" hidden aria-label="權限不足">
+    <img src="assets/common-state-locked.webp" alt="">
+    <h2>權限不足</h2>
+    <p>目前沒有使用此功能的權限。</p>
+    <a class="primary" href="../index.html" style="text-decoration:none">回入口網站</a>
+  </section>
+
+  <div class="cols" id="cols">
+    <div class="col">
+      <section class="card" id="login" hidden aria-label="登入">
+        <h2 class="t">登入</h2>
+        <p class="hint">請輸入姓名和 6 位數通行碼,與入口網相同。</p>
+        <div class="loginform">
+          <input id="name-in" type="text" autocomplete="username" placeholder="姓名">
+          <input id="token-in" type="password" inputmode="numeric" autocomplete="current-password" placeholder="6 位數通行碼">
+          <button class="primary" data-a="login" type="button">登入</button>
+        </div>
+        <p class="status err" id="login-msg" hidden></p>
+      </section>
+
+      <section class="card" id="photo" hidden aria-label="拍照匯入">
+        <h2 class="t"><i class="ic" aria-hidden="true" style="--ic:url(assets/common-icon-camera.svg)"></i>拍照匯入</h2>
+        <p class="hint">先匯入今天的出席表,再匯入白板(或直接用自動排車)。結果都會先給你核對。</p>
+        <div class="photo-btns">
+          <button class="primary" type="button" data-a="pick-att" id="btn-att"><i class="ic" aria-hidden="true" style="--ic:url(assets/trip-icon-attendance.svg)"></i>匯入出席表</button>
+          <button class="secondary" type="button" data-a="pick-board" id="btn-board"><i class="ic" aria-hidden="true" style="--ic:url(assets/trip-icon-whiteboard.svg)"></i>辨識白板</button>
+        </div>
+        <div style="margin-top:10px" hidden id="stop-wrap"><button class="secondary" type="button" data-a="stop" style="width:100%">停止</button></div>
+        <input class="file-in" id="photo-in" type="file" accept="image/*" tabindex="-1" aria-hidden="true">
+        <p class="status" id="photo-status" role="status" hidden></p>
+        <div class="result" id="photo-result" hidden></div>
+      </section>
+
+      <nav class="tabs" aria-label="車輛與方向">
+        <div class="tabs-row" id="tabs" role="tablist"></div>
+        <div class="seg" id="seg" role="group" aria-label="來程或回程"></div>
+      </nav>
+
+      <section class="card" id="editor" aria-label="編輯車輛"></section>
+    </div>
+
+    <div class="col">
+      <section class="card" id="check" aria-label="出席核對" hidden></section>
+      <section class="card preview-card" aria-label="LINE 訊息預覽">
+        <h2><i class="ic" aria-hidden="true" style="--ic:url(assets/trip-icon-message.svg)"></i><span>LINE 訊息預覽</span><small id="pv-title"></small></h2>
+        <pre class="bubble" id="preview"></pre>
+        <div class="copy-row">
+          <button class="primary" data-a="copy1" type="button"><i class="ic" aria-hidden="true" style="--ic:url(assets/common-icon-copy.svg)"></i>複製這台車</button>
+          <button class="secondary" data-a="copyall" type="button"><i class="ic" aria-hidden="true" style="--ic:url(assets/trip-icon-copy-all.svg)"></i>複製全部車</button>
+        </div>
+      </section>
+      <div class="tools">
+        <button class="ghost" data-a="reset" data-confirm="再按一次:重設為空白" type="button">重設為空白</button>
+        <button class="ghost danger" data-a="clear" data-confirm="再按一次:清空全部" type="button">清空全部</button>
+      </div>
+    </div>
+  </div>
+</main>
+<datalist id="names"></datalist>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+  var NUM=['一','二','三','四','五','六','七','八','九','十'];
+  var KEY='chetang.v1';
+  var DIRS={'in':'來程(早上)','back':'回程(下午)'};
+  function uid(){return Math.random().toString(36).slice(2,8)}
+  function ico(n){return '<i class="ic" aria-hidden="true" style="--ic:url(assets/'+n+'.svg)"></i>'}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+  /* Whiteboard example (editable / resettable) */
+  var SEED=[['','',[[]]]];
+  function seed(){
+    var cars=SEED.map(function(s){return {id:uid(),no:s[0],driver:'',seats:8,trips:s[2].map(function(t){return t.slice()}),back:[[]]}});
+    return {cars:cars,sel:cars[0].id,names:[],dir:'in',att:null,hist:{'in':{},back:{}}};
+  }
+  function normalize(s){
+    if(!Array.isArray(s.names))s.names=[];
+    if(s.dir!=='back')s.dir='in';
+    if(!s.hist)s.hist={'in':{},back:{}};
+    if(!s.hist['in'])s.hist['in']={};if(!s.hist.back)s.hist.back={};
+    s.cars.forEach(function(c){if(!c.seats)c.seats=8;if(!Array.isArray(c.trips))c.trips=[[]];if(!Array.isArray(c.back))c.back=[[]]});
+    return s;
+  }
+  function load(){
+    try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&Array.isArray(s.cars))return normalize(s)}}catch(e){}
+    return null;
+  }
+  var S=load()||seed();
+
+  function tr(c,d){d=d||S.dir;if(d==='back'){if(!c.back)c.back=[[]];return c.back}return c.trips}
+  function setTr(c,t,d){d=d||S.dir;t=t.length?t:[[]];if(d==='back')c.back=t;else c.trips=t}
+  function remember(){
+    ['in','back'].forEach(function(d){
+      S.cars.forEach(function(c){tr(c,d).forEach(function(t,ti){t.forEach(function(n,o){S.hist[d][n]={no:c.no,ti:ti,o:o}})})});
+    });
+  }
+  var CFG=window.CHETANG_CONFIG||{};
+  CFG.AUTH_URL=CFG.AUTH_URL||(window.YOHO_CONFIG||{}).AUTH_URL||'';
+  function getToken(){
+    try{
+      var t=localStorage.getItem('yoho_token')||'',exp=Number(localStorage.getItem('yoho_exp')||0);
+      if(t&&(!exp||exp>Date.now()/1000))return t;
+    }catch(e){}
+    return '';
+  }
+  function clearAuth(){try{['yoho_token','yoho_exp','yoho_role','yoho_name','yoho_label'].forEach(function(k){localStorage.removeItem(k)})}catch(e){}}
+  function hasApi(){return !!(CFG.APP_URL&&getToken())}
+  function post(url,body){
+    return fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}).then(function(r){return r.json()});
+  }
+  function api(action,payload){
+    return post(CFG.APP_URL,Object.assign({token:getToken(),action:action},payload||{})).then(function(d){
+      if(!d||!d.ok){var e=new Error((d&&d.error)||'伺服器錯誤');e.code=(d&&d.error)||'error';throw e}
+      return d.data;
+    });
+  }
+  function onApiErr(e,msg){
+    if(e&&e.code==='unauthorized'){
+      clearAuth();refreshApi();
+      var m=document.getElementById('login-msg');m.textContent='登入已過期或失效,請重新登入。';m.hidden=false;return;
+    }
+    if(e&&e.code==='forbidden'){document.getElementById('cols').hidden=true;document.getElementById('denied').hidden=false;return}
+    if(msg)toast(msg);
+  }
+  function doLogin(name,code){
+    var m=document.getElementById('login-msg');m.hidden=true;
+    post(CFG.AUTH_URL,{action:'login',name:name,code:code}).then(function(d){
+      if(!d||!d.ok){m.textContent=(d&&d.error==='locked')?'嘗試次數過多,請稍後再試。':'姓名或通行碼不正確。';m.hidden=false;return}
+      try{
+        localStorage.setItem('yoho_token',d.token);localStorage.setItem('yoho_exp',String(d.exp));
+        localStorage.setItem('yoho_role',d.role);localStorage.setItem('yoho_name',d.name);localStorage.setItem('yoho_label',d.label||'');
+      }catch(e){}
+      document.getElementById('token-in').value='';
+      refreshApi();cloudLoad();
+    }).catch(function(){m.textContent='連線失敗,請確認網路。';m.hidden=false});
+  }
+  var syncT=null;
+  function save(){
+    remember();S.ts=Date.now();var j=JSON.stringify(S);
+    try{localStorage.setItem(KEY,j)}catch(e){}
+    clearTimeout(syncT);
+    syncT=setTimeout(function(){
+      if(!hasApi())return;
+      api('save',{state:j}).catch(function(e){onApiErr(e,'雲端儲存失敗,資料暫時只在這支手機')});
+    },1200);
+  }
+
+  function cur(){
+    var c=S.cars.filter(function(x){return x.id===S.sel})[0];
+    if(!c&&S.cars.length){c=S.cars[0];S.sel=c.id}
+    return c;
+  }
+  function textFor(c){
+    var L=[];
+    L.push((c.driver?'@'+c.driver+' ':'')+(c.no||'(車號)')+(S.dir==='back'?' 回程':''));
+    tr(c).forEach(function(t,i){
+      if(!t.length)return;
+      L.push('第'+(NUM[i]||(i+1))+'趟');
+      t.forEach(function(n,j){L.push((j+1)+'. '+n)});
+    });
+    return L.join('\n');
+  }
+  function hasPeople(c){return tr(c).some(function(t){return t.length})}
+  function allNames(){
+    var set={};
+    S.names.forEach(function(n){set[n]=1});
+    S.cars.forEach(function(c){['in','back'].forEach(function(d){tr(c,d).forEach(function(t){t.forEach(function(n){set[n]=1})})})});
+    return Object.keys(set);
+  }
+
+  /* ---------- attendance ---------- */
+  function field(d){return d==='back'?'b':'c'}
+  function statusOf(n){
+    if(!S.att)return '';
+    var p=S.att.people[n];
+    if(!p)return '出席表找不到這個名字';
+    if(/休假|結案/.test(p.note||''))return p.note+',今天不來';
+    var v=p[field(S.dir)];
+    if(v==='車')return '';
+    if(v==='自')return S.dir==='in'?'來程由家屬自己送':'回程由家屬自己接';
+    return '出席表這格是空白,今天不搭車';
+  }
+  function rideNames(d){
+    if(!S.att)return [];
+    return Object.keys(S.att.people).filter(function(n){
+      var p=S.att.people[n];return p[field(d)]==='車'&&!/休假|結案/.test(p.note||'');
+    });
+  }
+  function placedSet(){
+    var set={};S.cars.forEach(function(c){tr(c).forEach(function(t){t.forEach(function(n){set[n]=1})})});return set;
+  }
+  function poolNames(){var pl=placedSet();return rideNames(S.dir).filter(function(n){return !pl[n]})}
+  function flagged(){
+    var out=[];
+    S.cars.forEach(function(c){tr(c).forEach(function(t,ti){t.forEach(function(n,ri){
+      var s=statusOf(n);if(s)out.push({c:c,ti:ti,ri:ri,n:n,why:s});
+    })})});
+    return out;
+  }
+  function autoArrange(){
+    var d=S.dir,h=S.hist[d]||{},hi=S.hist['in']||{},byNo={},nt={},pool=[],items=[];
+    S.cars.forEach(function(c){if(c.no&&!byNo[c.no])byNo[c.no]=c;nt[c.id]=[[]]});
+    rideNames(d).forEach(function(n){
+      var r=h[n]||(d==='back'?hi[n]:null),car=r&&byNo[r.no];
+      if(!car){pool.push(n);return}
+      items.push({n:n,car:car,ti:r.ti,o:r.o});
+    });
+    items.sort(function(a,b){return a.o-b.o});
+    items.forEach(function(it){
+      var t=nt[it.car.id];while(t.length<=it.ti)t.push([]);
+      if(t[it.ti].length>=it.car.seats)pool.push(it.n);else t[it.ti].push(it.n);
+    });
+    S.cars.forEach(function(c){setTr(c,nt[c.id],d)});
+    return pool.length;
+  }
+
+  var $tabs=document.getElementById('tabs'),$seg=document.getElementById('seg'),$ed=document.getElementById('editor'),$ck=document.getElementById('check'),
+      $pv=document.getElementById('preview'),$pvt=document.getElementById('pv-title'),$dl=document.getElementById('names'),$toast=document.getElementById('toast');
+  var poolSel=null;
+
+  function renderTabs(){
+    var h=S.cars.map(function(c){
+      return '<button type="button" role="tab" class="tab" data-a="tab" data-id="'+c.id+'" aria-selected="'+(c.id===S.sel)+'">'+(esc(c.no)||'未命名')+'</button>';
+    }).join('');
+    h+='<button type="button" class="tab add" data-a="addcar">＋ 新增車</button>';
+    $tabs.innerHTML=h;
+    var ICON={'in':'car-icon-route-go','back':'car-icon-route-back'};
+    $seg.innerHTML=['in','back'].map(function(d){
+      return '<button type="button" data-a="dir" data-d="'+d+'" aria-pressed="'+(S.dir===d)+'">'+ico(ICON[d])+DIRS[d]+'</button>';
+    }).join('');
+    var sel=$tabs.querySelector('[aria-selected="true"]');
+    if(sel&&sel.scrollIntoView)try{sel.scrollIntoView({block:'nearest',inline:'nearest'})}catch(e){}
+  }
+  function renderPreview(){
+    var c=cur();
+    $pvt.textContent='· '+DIRS[S.dir];
+    $pv.textContent=c?textFor(c):'(還沒有車,請先新增)';
+  }
+  function renderEditor(focusId){
+    var c=cur();
+    if(!c){
+      $ed.innerHTML='<div class="empty"><img src="assets/trip-state-no-car.webp" alt=""><h3>還沒有車</h3><p>先新增一台,或匯入白板。</p>'+
+        '<div class="btns2"><button class="primary" data-a="addcar" type="button">＋ 新增車</button>'+
+        (hasApi()?'<button class="secondary" data-a="pick-board" type="button">'+ico('trip-icon-whiteboard')+'辨識白板</button>':'')+'</div></div>';
+      return;
+    }
+    var h='<h2 class="t">'+ico('trip-portal-icon')+'車輛編輯</h2><div class="fields">'+
+      '<div class="field"><label for="f-no">車號</label><input id="f-no" class="num-input" type="text" inputmode="numeric" autocomplete="off" value="'+esc(c.no)+'"></div>'+
+      '<div class="field"><label for="f-driver">司機(LINE @名字)</label><input id="f-driver" type="text" autocomplete="off" placeholder="例:王小明" value="'+esc(c.driver)+'"></div>'+
+      '<div class="field"><label for="f-seats">每趟座位</label><input id="f-seats" class="num-input" type="number" inputmode="numeric" min="1" max="30" value="'+c.seats+'"></div>'+
+      '</div>';
+    h+='<div class="trips">';
+    tr(c).forEach(function(t,ti){
+      var over=t.length>c.seats;
+      h+='<div class="trip"><div class="trip-head"><h3>'+ico('trip-icon-seat')+'第'+(NUM[ti]||(ti+1))+'趟</h3><span class="count'+(over?' over':'')+'">'+t.length+' / '+c.seats+' 人</span>'+(over?'<span class="pill red">超過座位</span>':'')+
+        '<button class="ghost danger" type="button" data-a="deltrip" data-ti="'+ti+'" data-confirm="再按一次:刪除這趟">'+ico('common-icon-trash')+'刪除這趟</button></div>';
+      h+='<ol class="rows">';
+      t.forEach(function(n,ri){
+        var why=statusOf(n);
+        h+='<li class="row'+(why?' flag':'')+'"><span class="idx">'+(ri+1)+'</span>'+
+          '<input class="name-input" type="text" aria-label="第'+(ri+1)+'位" data-ti="'+ti+'" data-ri="'+ri+'" value="'+esc(n)+'">'+
+          '<span class="acts">'+
+          '<button class="ib" type="button" aria-label="上移" data-a="up" data-ti="'+ti+'" data-ri="'+ri+'"'+(ri===0?' disabled':'')+'>'+ico('trip-icon-move-up')+'</button>'+
+          '<button class="ib" type="button" aria-label="下移" data-a="down" data-ti="'+ti+'" data-ri="'+ri+'"'+(ri===t.length-1?' disabled':'')+'>'+ico('trip-icon-move-down')+'</button>'+
+          '<button class="ib" type="button" aria-label="換到另一趟" data-a="move" data-ti="'+ti+'" data-ri="'+ri+'"'+(tr(c).length<2?' disabled':'')+'>'+ico('trip-icon-swap')+'</button>'+
+          '<button class="ib x" type="button" aria-label="刪除" data-a="del" data-ti="'+ti+'" data-ri="'+ri+'">'+ico('common-icon-close')+'</button>'+
+          '</span>'+(why?'<span class="flagline">'+esc(why)+'</span>':'')+'</li>';
+      });
+      h+='</ol>';
+      h+='<div class="addrow"><input id="add-'+ti+'" class="add-input" data-ti="'+ti+'" type="text" list="names" autocomplete="off" enterkeyhint="done" placeholder="輸入名字">'+
+        '<button class="primary" type="button" data-a="add" data-ti="'+ti+'">加入</button></div><p class="addhint">可一次貼多位(空格分開)</p></div>';
+    });
+    h+='</div><div class="card-foot"><button class="secondary" type="button" data-a="addtrip">'+ico('trip-icon-add-trip')+'新增一趟</button>'+
+      '<button class="ghost danger" type="button" data-a="delcar" data-confirm="再按一次:刪除此車">'+ico('common-icon-trash')+'刪除這台車</button></div>';
+    $ed.innerHTML=h;
+    $dl.innerHTML=allNames().map(function(n){return '<option value="'+esc(n)+'">'}).join('');
+    if(focusId){var el=document.getElementById(focusId);if(el)el.focus()}
+  }
+  function renderCheck(){
+    if(!S.att){
+      if(!hasApi()){$ck.hidden=true;$ck.innerHTML='';return}
+      $ck.innerHTML='<div class="empty"><img src="assets/trip-state-no-attendance.webp" alt=""><h3>還沒匯入出席表</h3><p>匯入今天的出席表,就能核對誰要搭車、誰還沒排。</p>'+
+        '<div class="btns2"><button class="primary" data-a="pick-att" type="button">'+ico('trip-icon-attendance')+'匯入出席表</button></div></div>';
+      $ck.hidden=false;return;
+    }
+    var d=S.dir,ride=rideNames(d),pool=poolNames(),fl=flagged(),c=cur();
+    var short=DIRS[d].slice(0,2);
+    var h='<h2 class="t">'+ico('trip-icon-attendance')+'出席核對 · '+esc(S.att.date||'今天')+'</h2>'+
+      '<div class="dirpill">'+ico(d==='in'?'car-icon-route-go':'car-icon-route-back')+DIRS[d]+'</div>'+
+      '<div class="stats"><div class="stat"><span>要搭車</span><b>'+ride.length+'<small>人</small></b></div>'+
+      '<div class="stat"><span>已排</span><b>'+(ride.length-pool.length)+'<small>人</small></b></div>'+
+      '<div class="stat wait"><span>待排</span><b>'+pool.length+'<small>人</small></b></div></div>'+
+      '<button class="primary" type="button" style="width:100%" data-a="auto" data-confirm="再按一次:會取代目前的'+short+'名單">'+ico('trip-icon-auto')+'依上次排法自動排'+short+'</button>'+
+      '<p class="hint" style="margin:8px 0 0;text-align:center">每位長輩會排回上次搭的車和趟次;沒有紀錄或座位已滿的人會放在待排。</p>';
+    h+='<p class="sec-title">'+ico('trip-icon-pool')+'待排名單('+pool.length+')</p>';
+    if(!pool.length)h+='<p class="hint">所有要搭車的人都排好了。</p>';
+    else{
+      if(poolSel&&pool.indexOf(poolSel)>=0&&c){
+        h+='<div class="pickto"><p>'+ico('trip-portal-icon')+'把「'+esc(poolSel)+'」加到 '+(esc(c.no)||'這台車')+':</p><div class="btns">'+
+          tr(c).map(function(t,i){var full=t.length>=c.seats;return '<button type="button" data-a="poolto" data-ti="'+i+'"'+(full?' class="over"':'')+'>第'+(NUM[i]||(i+1))+'趟 ('+t.length+'/'+c.seats+')'+(full?' <span class="pill red">已滿</span>':'')+'</button>'}).join('')+'</div></div>';
+      }else poolSel=null;
+      h+='<div class="chips">'+pool.map(function(n){
+        return '<button type="button" class="chip" data-a="pool" data-n="'+esc(n)+'" aria-pressed="'+(n===poolSel)+'">'+esc(n)+'</button>';
+      }).join('')+'</div><p class="hint">點名字後,選要加到目前這台車的哪一趟。</p>';
+    }
+    h+='<p class="sec-title bad">'+ico('common-icon-warning')+'需要核對的車上名字('+fl.length+')</p>';
+    if(!fl.length)h+='<p class="hint">車上每個人都和出席表相符。</p>';
+    else{
+      h+='<ul class="flaglist">'+fl.map(function(f){
+        return '<li>'+ico('common-icon-warning')+'<span><b>'+(esc(f.c.no)||'未命名')+'</b> 第'+(NUM[f.ti]||(f.ti+1))+'趟 '+esc(f.n)+':'+esc(f.why)+'</span></li>';
+      }).join('')+'</ul>'+
+      '<button class="btn-danger" type="button" data-a="rmflag" data-confirm="再按一次:移除這 '+fl.length+' 人">'+ico('trip-icon-remove-flagged')+'移除這些人</button>'+
+      '<p class="hint" style="margin-top:8px">「找不到這個名字」常是字寫得不同,先到車上修正名字再看。</p>';
+    }
+    if(ride.length&&!pool.length&&!fl.length){
+      h+='<div class="ok-state"><img src="assets/trip-state-all-arranged.webp" alt=""><p>所有要搭車的人都排好了。<br>車上每個人都和出席表相符。</p></div>';
+    }
+    $ck.innerHTML=h;$ck.hidden=false;
+  }
+  function renderAll(focusId){renderTabs();renderEditor(focusId);renderCheck();renderPreview()}
+
+  function toast(msg){
+    $toast.innerHTML=ico('common-icon-check')+'<span></span>';$toast.lastChild.textContent=msg;$toast.hidden=false;
+    clearTimeout(toast.t);toast.t=setTimeout(function(){$toast.hidden=true},2200);
+  }
+  function copy(text){
+    var p;
+    try{p=navigator.clipboard&&navigator.clipboard.writeText(text)}catch(e){p=null}
+    return Promise.resolve(p).then(function(){if(!p)throw 0;return true}).catch(function(){
+      try{
+        var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');
+        ta.style.cssText='position:fixed;top:0;left:0;opacity:0;font-size:16px';
+        document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,999999);
+        var ok=document.execCommand('copy');ta.remove();return ok;
+      }catch(e){return false}
+    });
+  }
+
+  var confirmEl=null,confirmT=null;
+  function disarm(btn){btn.innerHTML=btn.dataset.origHtml;btn.classList.remove('armed')}
+  function needConfirm(btn){
+    if(!btn.hasAttribute('data-confirm'))return false;
+    if(confirmEl===btn){clearTimeout(confirmT);disarm(btn);confirmEl=null;return false}
+    if(confirmEl){disarm(confirmEl)}
+    btn.dataset.origHtml=btn.innerHTML;btn.textContent=btn.dataset.confirm;btn.classList.add('armed');confirmEl=btn;
+    clearTimeout(confirmT);confirmT=setTimeout(function(){if(confirmEl){disarm(confirmEl);confirmEl=null}},3000);
+    return true;
+  }
+  function addName(c,ti,n){tr(c)[ti].push(n);if(S.names.indexOf(n)<0)S.names.push(n)}
+  function addNames(ti){
+    var c=cur(),inp=document.getElementById('add-'+ti);
+    if(!c||!inp)return;
+    var parts=inp.value.split(/[\s,,、]+/).filter(Boolean);
+    if(!parts.length){inp.focus();return}
+    parts.forEach(function(n){addName(c,ti,n)});
+    save();renderAll('add-'+ti);
+  }
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-a]');if(!b)return;
+    var a=b.dataset.a,c=cur(),ti=+b.dataset.ti,ri=+b.dataset.ri;
+    if(needConfirm(b))return;
+    switch(a){
+      case 'tab':S.sel=b.dataset.id;poolSel=null;save();renderAll();break;
+      case 'dir':S.dir=b.dataset.d;poolSel=null;save();renderAll();break;
+      case 'addcar':
+        var nc={id:uid(),no:'',driver:'',seats:8,trips:[[]],back:[[]]};S.cars.push(nc);S.sel=nc.id;save();renderAll('f-no');break;
+      case 'delcar':
+        S.cars=S.cars.filter(function(x){return x.id!==c.id});S.sel=S.cars.length?S.cars[0].id:null;save();renderAll();break;
+      case 'addtrip':tr(c).push([]);save();renderAll('add-'+(tr(c).length-1));break;
+      case 'deltrip':tr(c).splice(ti,1);if(!tr(c).length)setTr(c,[[]]);save();renderAll();break;
+      case 'add':addNames(ti);break;
+      case 'del':tr(c)[ti].splice(ri,1);save();renderAll();break;
+      case 'up':case 'down':
+        var t=tr(c)[ti],j=a==='up'?ri-1:ri+1;
+        if(j>=0&&j<t.length){var tmp=t[ri];t[ri]=t[j];t[j]=tmp;save();renderAll()}break;
+      case 'move':
+        if(tr(c).length>1){var n=tr(c)[ti].splice(ri,1)[0];tr(c)[(ti+1)%tr(c).length].push(n);save();renderAll()}break;
+      case 'pool':poolSel=(poolSel===b.dataset.n)?null:b.dataset.n;renderCheck();break;
+      case 'poolto':
+        if(c&&poolSel){addName(c,ti,poolSel);toast('已加入 '+poolSel);poolSel=null;save();renderAll()}break;
+      case 'auto':
+        var left=autoArrange();poolSel=null;save();renderAll();
+        toast(left?'已排好,還有 '+left+' 人待排':'已全部排好');break;
+      case 'rmflag':
+        flagged().slice().reverse().forEach(function(f){tr(f.c)[f.ti].splice(f.ri,1)});
+        save();renderAll();toast('已移除');break;
+      case 'copy1':
+        if(c)copy(textFor(c)).then(function(ok){toast(ok?'已複製,可貼到 LINE':'請長按上方文字手動複製')});break;
+      case 'copyall':
+        var cs=S.cars.filter(hasPeople);
+        copy(cs.map(textFor).join('\n\n')).then(function(ok){toast(ok?'已複製 '+cs.length+' 台車':'請長按文字手動複製')});break;
+      case 'pick-att':photoMode='att';document.getElementById('photo-in').click();break;
+      case 'pick-board':photoMode='board';document.getElementById('photo-in').click();break;
+      case 'login':
+        var nm=document.getElementById('name-in').value.trim(),cd=document.getElementById('token-in').value.trim();
+        if(nm&&cd)doLogin(nm,cd);break;
+      case 'logout':clearAuth();refreshApi();toast('已登出');break;
+      case 'stop':if(ctl)ctl.abort();break;
+      case 'imp-replace':applyImport('replace');break;
+      case 'imp-merge':applyImport('merge');break;
+      case 'imp-cancel':pending=null;showResult();break;
+      case 'reset':S=seed();poolSel=null;save();renderAll();toast('已重設為空白');break;
+      case 'clear':S={cars:[],sel:null,names:S.names,dir:S.dir,att:S.att,hist:S.hist};save();renderAll();break;
+    }
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('add-input')){
+      e.preventDefault();addNames(+e.target.dataset.ti);
+    }
+  });
+  document.addEventListener('input',function(e){
+    var t=e.target,c=cur();if(!c)return;
+    if(t.id==='f-no'){c.no=t.value.trim();save();renderTabs();renderPreview()}
+    else if(t.id==='f-driver'){c.driver=t.value.trim();save();renderPreview()}
+    else if(t.classList.contains('name-input')){
+      tr(c)[+t.dataset.ti][+t.dataset.ri]=t.value.trim();save();renderPreview();
+    }
+  });
+  document.addEventListener('change',function(e){
+    var t=e.target,c=cur();if(!c)return;
+    if(t.id==='f-seats'){var v=parseInt(t.value,10);c.seats=(v>0&&v<=30)?v:8;save();renderAll()}
+  });
+
+  /* ---------- Photo import (Gemini through the Apps Script backend) ---------- */
+  var sample=null,maxImgs=1,ctl=null,pending=null,photoMode='board';
+  var $photo=document.getElementById('photo'),$pin=document.getElementById('photo-in'),$ps=document.getElementById('photo-status'),
+      $pr=document.getElementById('photo-result'),$bAtt=document.getElementById('btn-att'),$bBoard=document.getElementById('btn-board'),$stopw=document.getElementById('stop-wrap');
+
+  function setStatus(msg,kind){
+    if(!msg){$ps.hidden=true;return}
+    $ps.hidden=false;$ps.className='status'+(kind==='err'?' err':kind==='ok'?' ok':'');
+    $ps.innerHTML=(kind==='busy'?'<img src="assets/trip-state-importing.webp" alt=""><span>':'<span>')+esc(msg)+'</span>';
+  }
+  function busy(on){$bAtt.disabled=on;$bBoard.disabled=on;$stopw.hidden=!on}
+  function errCopy(code){
+    return {not_granted:'你沒有允許使用 Claude,無法辨識。',sampling_disabled:'這個帳號目前不能使用 Claude 辨識。',
+      rate_limited:'使用次數過多,請稍後再按一次。',image_rejected:'這張照片無法使用,請換一張。',
+      invalid_json:'辨識結果格式有誤,請再試一次。',session_expired:'登入已過期,請重新登入 Claude。',
+      images_unavailable:'這個畫面不支援傳送照片。'}[code]||'辨識失敗,請再試一次。';
+  }
+  function shrink(blob){
+    return (window.createImageBitmap?createImageBitmap(blob,{imageOrientation:'from-image'}):Promise.reject()).then(function(bmp){
+      var k=Math.min(1,2000/Math.max(bmp.width,bmp.height));
+      var cv=document.createElement('canvas');cv.width=Math.round(bmp.width*k);cv.height=Math.round(bmp.height*k);
+      cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+      if(bmp.close)bmp.close();
+      return cv.toDataURL('image/jpeg',0.85).split(',')[1];
+    }).catch(function(){
+      return new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){res(String(fr.result).split(',')[1])};fr.onerror=rej;fr.readAsDataURL(blob)});
+    });
+  }
+  function gemini(prompt,o){
+    var sig=o.signal;
+    return Promise.all(o.images.map(shrink)).then(function(b64s){
+      return new Promise(function(res,rej){
+        if(sig.aborted)return rej({code:'cancelled'});
+        sig.addEventListener('abort',function(){rej({code:'cancelled'})});
+        api('recognize',{prompt:prompt,images:b64s}).then(function(t){
+          try{res(JSON.parse(String(t).trim().replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'')))}
+          catch(e){rej({code:'invalid_json'})}
+        }).catch(function(e){
+          if(e&&(e.code==='unauthorized'||e.code==='forbidden'))onApiErr(e);
+          rej({code:'server',message:(e&&e.message)?e.message:'連線失敗,請確認網路'});
+        });
+      });
+    });
+  }
+  function makeImages(file){
+    if(maxImgs<3||!window.createImageBitmap)return Promise.resolve([file]);
+    return createImageBitmap(file,{imageOrientation:'from-image'}).then(function(bmp){
+      var w=bmp.width,h=bmp.height,parts=[[0,0.56],[0.44,1]];
+      return Promise.all(parts.map(function(p){
+        var sx=Math.round(w*p[0]),sw=Math.round(w*(p[1]-p[0])),k=Math.min(1,2400/Math.max(sw,h));
+        var cv=document.createElement('canvas');cv.width=Math.round(sw*k);cv.height=Math.round(h*k);
+        cv.getContext('2d').drawImage(bmp,sx,0,sw,h,0,0,cv.width,cv.height);
+        return new Promise(function(res){cv.toBlob(function(b){res(b)},'image/jpeg',0.92)});
+      })).then(function(bl){
+        if(bmp.close)bmp.close();
+        return bl.every(Boolean)?[file].concat(bl):[file];
+      });
+    }).catch(function(){return [file]});
+  }
+  function boardPrompt(n){
+    var known=allNames().slice(0,400).join('、');
+    return '這是一張護理之家接送車趟白板的照片。白板上每一直欄是一台車:最上方綠色底的數字是車號(4 位數),其下有「第一趟」「第二趟」標籤,標籤下方由上到下排列住民姓名卡片(姓名是手寫或印刷的中文字,卡片左側的彩色標記請忽略)。\n'+
+      '任務:把每台車、每一趟的住民姓名,依由上到下的順序讀出來。\n規則:\n'+
+      '- 逐字照著寫,不要把名字改成你覺得比較通順的字。\n'+
+      '- 只有一趟的車,trips 只放一個陣列。\n'+
+      (n>1?'- 第 1 張是整張照片,第 2、3 張是同一張照片的左半與右半放大圖(中間有重疊),只用來看清楚字。每台車只輸出一次。\n':'')+
+      '- 看不清楚、不確定的名字,仍寫出你最接近的判斷,並把該名字加進 uncertain。\n'+
+      (known?'- 以下是已知的住民姓名,只有在字跡明顯相符時才採用:'+known+'\n':'')+
+      '只回覆 JSON,格式:{"cars":[{"no":"1234","trips":[["王小明","李小華"],["張小美","陳大同"]]}],"uncertain":["名字"]}';
+  }
+  function attPrompt(){
+    return '這是護理之家「學員出席名單」表格的照片或截圖。表格分成三個區塊並排,每個區塊的欄位依序是:編號、姓名、來、回、備註。「來」「回」欄的格子可能是黑色圓點●(搭機構的車)、「自」字(家屬自己接送)、或空白。備註可能是「休假」「結案」「保北」「老大」等文字。\n'+
+      '任務:依編號順序,讀出每一列。\n規則:\n'+
+      '- 姓名逐字照寫,不要改字。\n- 圓點寫 "車",「自」字寫 "自",空白寫 ""。\n'+
+      '- 灰色字的列(結案)也要輸出,備註照寫;備註為空就寫 ""。\n- 表格標題上的日期(例如 115/11/12)寫在 date。\n'+
+      '只回覆 JSON,格式:{"date":"115/11/12","people":[{"name":"王小明","c":"車","b":"車","note":""}]}';
+  }
+  function cleanBoard(d){
+    if(!d||!Array.isArray(d.cars))return null;
+    var cars=d.cars.map(function(c){
+      var trips=(Array.isArray(c&&c.trips)?c.trips:[]).map(function(t){
+        return (Array.isArray(t)?t:[]).map(function(n){return String(n).trim()}).filter(Boolean);
+      }).filter(function(t){return t.length});
+      return {no:String((c&&c.no)||'').replace(/\s/g,''),trips:trips};
+    }).filter(function(c){return c.trips.length});
+    if(!cars.length)return null;
+    var unc=(Array.isArray(d.uncertain)?d.uncertain:[]).map(function(n){return String(n).trim()}).filter(Boolean);
+    return {cars:cars,uncertain:unc};
+  }
+  function cleanAtt(d){
+    if(!d||!Array.isArray(d.people))return null;
+    var people={},cnt=0;
+    d.people.forEach(function(p){
+      var n=String((p&&p.name)||'').replace(/\s/g,'');if(!n)return;
+      var v=function(x){x=String(x||'').trim();return x==='車'||x==='●'?'車':(x==='自'?'自':'')};
+      people[n]={c:v(p.c),b:v(p.b),note:String(p.note||'').trim()};cnt++;
+    });
+    return cnt?{date:String(d.date||'').trim(),people:people}:null;
+  }
+  function showResult(){
+    if(!pending){$pr.hidden=true;$pr.innerHTML='';return}
+    var total=0;
+    var li=pending.cars.map(function(c){
+      var parts=c.trips.map(function(t,i){total+=t.length;return '第'+(NUM[i]||(i+1))+'趟 '+t.length+' 人'});
+      return '<li>'+(esc(c.no)||'(未讀到車號)')+':'+parts.join('、')+'</li>';
+    }).join('');
+    var h='<p style="margin:0;font-weight:700">白板辨識到 '+pending.cars.length+' 台車,共 '+total+' 人(將套用到'+DIRS[S.dir]+')</p><ul>'+li+'</ul>';
+    if(pending.uncertain.length)h+='<p class="warn">請特別核對這些名字:'+pending.uncertain.map(esc).join('、')+'</p>';
+    h+='<div class="copy-row"><button class="primary" type="button" data-a="imp-replace">取代全部車</button>'+
+       '<button class="secondary" type="button" data-a="imp-merge">合併(同車號覆蓋)</button></div>'+
+       '<div class="card-foot"><button class="ghost" type="button" data-a="imp-cancel">取消</button></div>';
+    $pr.innerHTML=h;$pr.hidden=false;
+  }
+  function applyImport(mode){
+    if(!pending)return;
+    var old={};S.cars.forEach(function(c){if(c.no)old[c.no]=c});
+    if(mode==='replace'){
+      S.cars=pending.cars.map(function(c){
+        var o=old[c.no],nc={id:uid(),no:c.no,driver:o?o.driver:'',seats:o?o.seats:8,trips:[[]],back:[[]]};
+        if(o){nc.trips=o.trips;nc.back=o.back}
+        setTr(nc,c.trips);return nc;
+      });
+    }else{
+      pending.cars.forEach(function(c){
+        var ex=c.no&&S.cars.filter(function(x){return x.no===c.no})[0];
+        if(ex)setTr(ex,c.trips);
+        else{var nc={id:uid(),no:c.no,driver:'',seats:8,trips:[[]],back:[[]]};setTr(nc,c.trips);S.cars.push(nc)}
+      });
+    }
+    pending.cars.forEach(function(c){c.trips.forEach(function(t){t.forEach(function(n){if(S.names.indexOf(n)<0)S.names.push(n)})})});
+    S.sel=S.cars[0].id;save();pending=null;showResult();setStatus('已套用,請逐台核對名字。');renderAll();
+    window.scrollTo(0,0);
+  }
+  function recognize(file){
+    var isAtt=photoMode==='att';
+    pending=null;showResult();busy(true);setStatus((isAtt?'讀取出席表':'辨識白板')+'中,通常需要 20 到 60 秒…','busy');
+    ctl=new AbortController();
+    var job=isAtt
+      ? gemini(attPrompt(),{images:[file],signal:ctl.signal,modelTier:'default'})
+      : makeImages(file).then(function(imgs){return gemini(boardPrompt(imgs.length),{images:imgs,signal:ctl.signal,modelTier:'default'})});
+    return job.then(function(d){
+      if(isAtt){
+        var a=cleanAtt(d);
+        if(!a){setStatus('沒有讀到出席名單,請拍清楚整張表再試一次。','err');return}
+        S.att=a;Object.keys(a.people).forEach(function(n){if(S.names.indexOf(n)<0)S.names.push(n)});
+        save();renderAll();
+        setStatus('已匯入 '+Object.keys(a.people).length+' 位。來程要搭車 '+rideNames('in').length+' 人,回程 '+rideNames('back').length+' 人。','ok');
+      }else{
+        var r=cleanBoard(d);
+        if(!r){setStatus('沒有讀到車趟,請拍得更清楚、整面白板入鏡再試一次。','err');return}
+        pending=r;setStatus('辨識完成,請核對後套用。');showResult();
+      }
+    }).catch(function(e){
+      if(e&&e.code==='cancelled')setStatus('已停止。');
+      else if(e&&e.code==='server')setStatus('辨識失敗:'+e.message,'err');
+      else setStatus(errCopy(e&&e.code),'err');
+    }).then(function(){busy(false);ctl=null});
+  }
+  $pin.addEventListener('change',function(){
+    var f=$pin.files&&$pin.files[0];$pin.value='';
+    if(f&&sample)recognize(f);
+  });
+
+  var $login=document.getElementById('login');
+  function refreshApi(){
+    var on=hasApi(),nm='';
+    try{nm=localStorage.getItem('yoho_name')||''}catch(e){}
+    sample=on;maxImgs=3;$photo.hidden=!on;
+    $login.hidden=!(CFG.AUTH_URL&&CFG.APP_URL&&!getToken());
+    document.getElementById('userbar').hidden=!on;
+    var lb='';try{lb=localStorage.getItem('yoho_label')||''}catch(e){}
+    document.getElementById('user-label').textContent=on?(nm+(lb?' · '+lb:'')):'';
+    document.getElementById('user-av').textContent=on?((nm||'—').trim().charAt(0)||'—'):'—';
+  }
+  function cloudLoad(){
+    if(!hasApi())return;
+    api('load').then(function(j){
+      try{
+        if(j){
+          var r=normalize(JSON.parse(j));
+          if((r.ts||0)>(S.ts||0)){S=r;poolSel=null;try{localStorage.setItem(KEY,j)}catch(e){}renderAll();return}
+        }
+        save();
+      }catch(e){}
+    }).catch(function(e){onApiErr(e)});
+  }
+  refreshApi();
+  renderAll();
+  if(hasApi())cloudLoad();else save();
+})();
+</script>
+</body>
+</html>
