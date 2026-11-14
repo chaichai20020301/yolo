@@ -649,8 +649,18 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
   function setStatus(msg,kind){
     if(!msg){$ps.hidden=true;return}
     $ps.hidden=false;$ps.className='status'+(kind==='err'?' err':kind==='ok'?' ok':'');
-    $ps.innerHTML=(kind==='busy'?'<img src="assets/trip-state-importing.webp" alt=""><span>':'<span>')+esc(msg)+'</span>';
+    $ps.innerHTML=(kind==='busy'?'<img src="assets/trip-state-importing.webp" alt=""><span>':'<span>')+esc(msg)+(kind==='busy'?'<br><small id="tick" style="color:var(--muted)">已等 0 秒</small>':'')+'</span>';
   }
+  var tickT=null,tickStart=0;
+  function startTick(){
+    tickStart=Date.now();clearInterval(tickT);
+    tickT=setInterval(function(){
+      var el=document.getElementById('tick');if(!el)return;
+      var n=Math.round((Date.now()-tickStart)/1000);
+      el.textContent='已等 '+n+' 秒'+(n>90?',比平常久,可以按「停止」後再試一次':'');
+    },1000);
+  }
+  function stopTick(){clearInterval(tickT)}
   function busy(on){$bAtt.disabled=on;$bBoard.disabled=on;$stopw.hidden=!on}
   function errCopy(code){
     return {not_granted:'你沒有允許使用 Claude,無法辨識。',sampling_disabled:'這個帳號目前不能使用 Claude 辨識。',
@@ -776,7 +786,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
   }
   function recognize(file){
     var isAtt=photoMode==='att';
-    pending=null;showResult();busy(true);setStatus((isAtt?'讀取出席表':'辨識白板')+'中,通常需要 20 到 60 秒…','busy');
+    pending=null;showResult();busy(true);setStatus((isAtt?'讀取出席表':'辨識白板')+'中,通常需要 20 到 60 秒…','busy');startTick();
     ctl=new AbortController();
     var job=isAtt
       ? gemini(attPrompt(),{images:[file],signal:ctl.signal,modelTier:'default'})
@@ -797,7 +807,7 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(39
       if(e&&e.code==='cancelled')setStatus('已停止。');
       else if(e&&e.code==='server')setStatus('辨識失敗:'+e.message,'err');
       else setStatus(errCopy(e&&e.code),'err');
-    }).then(function(){busy(false);ctl=null});
+    }).then(function(){stopTick();busy(false);ctl=null});
   }
   $pin.addEventListener('change',function(){
     var f=$pin.files&&$pin.files[0];$pin.value='';
