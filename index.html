@@ -100,18 +100,28 @@
 
   /* 登入門與使用者列 */
   .hidden{display:none!important}
-  .gate{position:fixed;inset:0;z-index:100;background:var(--paper);display:grid;place-items:center;padding:24px 16px;overflow:auto}
-  .gate-card{width:100%;max-width:400px;background:var(--banner);border-radius:24px;padding:32px 28px;box-shadow:0 6px 15px rgba(25,62,37,.08);display:flex;flex-direction:column;gap:6px}
-  .glogo{height:72px;width:auto;max-width:100%;object-fit:contain;mix-blend-mode:multiply;align-self:flex-start;margin-bottom:10px}
+  .gate{position:fixed;inset:0;z-index:100;background:var(--paper);overflow:auto;display:flex;padding:24px 16px}
+  .gate-in{margin:auto;width:100%;max-width:1200px;display:grid;grid-template-columns:55fr 40fr;gap:5%;align-items:center}
+  .gate-hero{min-width:0}
+  .gate-hero h2{font:900 clamp(40px,4.6vw,64px)/1.2 var(--serif);color:var(--ink)}
+  .gate-hero p{margin-top:12px;font-size:clamp(17px,1.6vw,22px);font-weight:700;color:var(--muted);letter-spacing:1px}
+  .gate-scene{display:block;width:100%;height:auto;margin-top:8px}
+  .gate-scene.wide{display:none}
+  .gate-card{position:relative;overflow:hidden;width:100%;max-width:460px;justify-self:end;background:#fff;border:1px solid var(--line);border-radius:24px;padding:36px 36px 30px;box-shadow:0 10px 30px rgba(25,62,37,.10);display:flex;flex-direction:column;gap:6px}
+  .gate-card::before{content:"";position:absolute;inset:0;background:url(assets/portal-decor-leaf-bg.webp) center/70% no-repeat;opacity:.9;pointer-events:none}
+  .gate-card>*{position:relative}
+  .glogo{height:72px;width:auto;max-width:100%;object-fit:contain;mix-blend-mode:multiply;align-self:center;margin-bottom:6px}
   .gate-card h3{font:900 24px/1.3 var(--serif)}
-  .gsub{color:var(--muted);font-size:14px;letter-spacing:3px;margin-bottom:10px}
+  .gsub{color:var(--muted);font-size:15px;font-weight:700;letter-spacing:6px;text-align:center;margin-bottom:12px}
   .gate-card label{font-size:13px;color:var(--muted);margin-top:8px}
   .gate-card input{font:inherit;font-size:17px;min-height:48px;padding:0 14px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
   .gate-card input:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
   #gBtn{margin-top:16px;min-height:50px;border:0;border-radius:50px;background:var(--green);color:#fff;font:800 17px var(--sans);letter-spacing:4px;cursor:pointer}
   #gBtn:disabled{opacity:.6}
   #gateMsg{min-height:22px;font-size:14px;margin-top:8px}
-  .gate-hint{color:var(--muted);font-size:13px;margin-top:6px}
+  .gate-hint{color:var(--muted);font-size:13px;font-weight:700;margin-top:6px;text-align:center;line-height:1.7}
+  @media (max-width:860px){.gate{padding:16px 16px 90px}.gate-in{grid-template-columns:1fr;gap:14px;justify-items:center;text-align:center}.gate-top{order:-1;display:flex;justify-content:center}.gate-hero{text-align:center}.gate-hero h2{font-size:34px}.gate-hero p{font-size:16px}.gate-scene.big{display:none}.gate-scene.wide{display:block;margin:6px -16px 0;width:calc(100% + 32px);max-width:none}.gate-card{justify-self:center;max-width:520px;padding:28px 20px 24px}.gate-card label{text-align:left}.gate-top .glogo{height:52px}.gate-hero h2{margin-top:8px}.gate-card .glogo{display:none}}
+  @media (min-width:861px){.gate-top{display:none}}
   .userpill{display:flex;align-items:center;gap:8px;margin-left:16px}
   .avatar{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
   .uname{font-size:14px;white-space:nowrap}
@@ -123,17 +133,27 @@
 <body>
 <!-- 登入門 -->
 <div id="gate" class="gate hidden">
-  <div class="gate-card">
-    <img class="glogo" src="assets/logo.jpg" alt="悠活社區長照機構">
-    <div class="gsub">系 統 整 合 入 口</div>
-    <label for="gName">姓名</label>
-    <input id="gName" type="text" placeholder="你的名字,例如:王小明" autocomplete="username" maxlength="40">
-    <label for="gCode">6 位數通行碼</label>
-    <input id="gCode" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="6 位數通行碼" autocomplete="current-password">
-    <button id="gBtn" type="button">登　入</button>
-    <div id="gateMsg" aria-live="polite"></div>
-    <div class="gate-hint">登入後 12 小時內免再輸入;換班或共用手機請按「登出」。</div>
+  <div class="gate-in">
+    <div class="gate-hero">
+      <div class="gate-top"><img class="glogo" src="assets/logo.jpg" alt="悠活社區長照機構" style="display:block;align-self:auto"></div>
+      <h2 id="gSlogan">悠悠自在，<br>活出每一天</h2>
+      <p>歡迎回到悠活社區長照機構</p>
+      <img class="gate-scene big" src="assets/portal-login-scene.webp" alt="" aria-hidden="true">
+      <img class="gate-scene wide" src="assets/portal-login-scene-wide.webp" alt="" aria-hidden="true">
+    </div>
+    <div class="gate-card">
+      <img class="glogo" src="assets/logo.jpg" alt="悠活社區長照機構">
+      <div class="gsub">系 統 整 合 入 口</div>
+      <label for="gName">姓名</label>
+      <input id="gName" type="text" placeholder="你的名字，例如：王小明" autocomplete="username" maxlength="40">
+      <label for="gCode">6 位數通行碼</label>
+      <input id="gCode" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="6 位數通行碼" autocomplete="current-password">
+      <button id="gBtn" type="button">登　入</button>
+      <div id="gateMsg" aria-live="polite"></div>
+      <div class="gate-hint">登入後 12 小時內免再輸入；<br>換班或共用手機請按「登出」。</div>
+    </div>
   </div>
+  <div class="page-leaf bl d-cbl" aria-hidden="true"></div><div class="page-leaf br d-cbr" aria-hidden="true"></div>
 </div>
 <div class="page-leaf bl d-cbl" aria-hidden="true"></div><div class="page-leaf br d-cbr" aria-hidden="true"></div>
 <header class="topbar">
