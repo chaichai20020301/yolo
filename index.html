@@ -33,7 +33,10 @@
   .clock strong{display:block;color:var(--ink);font-size:24px;line-height:1.2;font-variant-numeric:tabular-nums}
 
   .page{flex:1}
-  .welcome{background:var(--banner);border-radius:24px;margin:24px 0;padding:32px 36px;box-shadow:0 6px 15px rgba(25,62,37,.06)}
+  .welcome{background:var(--banner);border-radius:24px;margin:24px 0;padding:32px 36px;box-shadow:0 6px 15px rgba(25,62,37,.06);min-height:340px;display:flex;flex-direction:column;justify-content:center}
+  .welcome-text{position:relative;z-index:1;width:46%}
+  .welcome-art{position:absolute;right:0;bottom:0;width:68%;height:100%;background:url(assets/portal-home-banner.webp) right bottom/auto 100% no-repeat;pointer-events:none;z-index:0}
+  .grid.solo{grid-template-columns:minmax(300px,520px);justify-content:center}
   .welcome h1{font:900 clamp(26px,4.5vw,38px)/1.3 var(--serif);letter-spacing:.02em}
   .welcome p{color:var(--muted);font-size:clamp(15px,2.2vw,19px);margin-top:10px}
 
@@ -62,14 +65,20 @@
   .card.soon .go{background:transparent;color:var(--muted);box-shadow:none;border:1.5px dashed #b3bdb0;font-weight:500}
   .badge{position:absolute;top:12px;right:14px;padding:3px 12px;border-radius:999px;background:#A63124;color:#fff;font-size:12px;font-weight:800}
 
-  footer{padding:20px 0 24px}
+  footer{padding:20px 0 15vw;background:url(assets/portal-footer-scene.webp) center bottom/100% auto no-repeat}
   .foot-in{border-top:1px solid var(--line);padding-top:18px;text-align:center;font-size:13px;color:var(--muted)}
+  .foot-in span{display:inline-block}
+  @media (min-width:1600px){footer{padding-bottom:240px;background-size:1600px auto}}
 
   @media (max-width:520px){
     .tb-title{display:none}
-    .welcome{padding:24px 22px}
+    .welcome{padding:24px 22px 0;min-height:0;display:block}
+    .welcome-text{width:auto}
+    .welcome-art{position:relative;display:block;width:calc(100% + 44px);margin:6px -22px 0;height:0;padding-bottom:50%;background-image:url(assets/portal-home-banner-sm.webp);background-position:center bottom;background-size:contain}
     .card{grid-template-columns:60px minmax(0,1fr);padding:18px}
     .ico{width:60px;height:60px}
+    .go{grid-column:1/-1;justify-self:stretch;justify-content:center;min-height:48px}
+    .desc{grid-column:2}
   }
   @media (prefers-reduced-motion:reduce){.card{animation:none;opacity:1;transition:none}}
 
@@ -125,7 +134,7 @@
   .userpill{display:flex;align-items:center;gap:8px;margin-left:16px}
   .avatar{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
   .uname{font-size:14px;white-space:nowrap}
-  .logout{border:0;background:none;color:var(--muted);min-height:44px;padding:0 4px;font-size:14px;cursor:pointer}
+  .logout{white-space:nowrap;border:0;background:none;color:var(--muted);min-height:44px;padding:0 4px;font-size:14px;cursor:pointer}
   .logout:hover{color:var(--green)}
   @media (max-width:520px){.uname{display:none}.userpill{margin-left:8px}}
 </style>
@@ -171,8 +180,11 @@
   <div class="wrap">
     <section class="welcome">
       <div class="deco wc tl d-ctl" aria-hidden="true"></div><div class="deco wc tr d-ctr" aria-hidden="true"></div>
-      <h1>歡迎回來，<span id="welcomeName">—</span></h1>
-      <p>請點選要使用的系統</p>
+      <div class="welcome-text">
+        <h1>歡迎回來，<span id="welcomeName">—</span></h1>
+        <p>請點選要使用的系統</p>
+      </div>
+      <div class="welcome-art" aria-hidden="true"></div>
     </section>
 
     <section class="grid" aria-label="系統列表">
@@ -202,7 +214,7 @@
   </div>
 </main>
 
-<footer id="foot" class="hidden"><div class="wrap foot-in">悠活社區長照機構 · 系統整合入口</div></footer>
+<footer id="foot" class="hidden"><div class="wrap foot-in"><span>悠活社區長照機構</span> <span>· 系統整合入口</span></div></footer>
 
 <script>
 (function(){
@@ -244,6 +256,8 @@
     for(var i=0;i<cards.length;i++){
       cards[i].style.display=allowed.indexOf(cards[i].getAttribute("data-key"))>=0?"":"none";
     }
+    var n=0;for(var j=0;j<cards.length;j++){if(cards[j].style.display!=="none")n++}
+    var g=document.querySelector("#app .grid");if(g)g.classList.toggle("solo",n===1);
   }
   function showApp(name,role,label){
     label=label||ROLE_LABEL[role]||"";
